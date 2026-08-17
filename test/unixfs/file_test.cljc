@@ -151,3 +151,19 @@
   (let [{:keys [cid blocks]} (unixfs/build (pattern-bytes 179200) {:chunk-size 1024})]
     (is (thrown? #?(:clj clojure.lang.ExceptionInfo :cljs js/Error)
                  (unixfs/read-file (store-of blocks) cid {:max-blocks 10})))))
+
+(deftest failures-are-distinguishable-by-type
+  (testing "a caller has to tell absence from corruption — one is a store
+            that does not have it, the other is a store that must not be
+            trusted, and `:ok? false` for both would hide the second"
+    (let [{:keys [cid blocks]} (unixfs/build (pattern-bytes 2048) {:chunk-size 1024})
+          leaf (first blocks)
+          type-of (fn [store]
+                    (try (unixfs/read-file store cid) nil
+                         (catch #?(:clj clojure.lang.ExceptionInfo :cljs js/Error) e
+                           (:type (ex-data e)))))]
+      (is (= :unixfs/missing-block
+             (type-of (dissoc (store-of blocks) (:cid leaf)))))
+      (is (= :unixfs/cid-mismatch
+             (type-of (assoc (store-of blocks) (:cid leaf)
+                             #?(:clj (byte-array 1024) :cljs (js/Uint8Array. 1024)))))))))

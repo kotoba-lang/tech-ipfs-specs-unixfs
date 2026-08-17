@@ -113,9 +113,11 @@
   ([bs {:keys [chunk-size max-links]
         :or {chunk-size default-chunk-size max-links default-max-links}}]
    (when-not (pos? chunk-size)
-     (throw (ex-info "unixfs: chunk-size must be positive" {:chunk-size chunk-size})))
+     (throw (ex-info "unixfs: chunk-size must be positive"
+                     {:type :unixfs/invalid-options :chunk-size chunk-size})))
    (when (< max-links 2)
-     (throw (ex-info "unixfs: max-links must be at least 2" {:max-links max-links})))
+     (throw (ex-info "unixfs: max-links must be at least 2"
+                     {:type :unixfs/invalid-options :max-links max-links})))
    (let [leaves (mapv leaf (chunk-seq bs chunk-size))
          published (fn [nodes] (mapv #(select-keys % [:cid :bytes]) nodes))]
      (loop [level leaves
@@ -162,16 +164,19 @@
          fetch (fn [c expect-codec]
                  (when (> (swap! seen inc) max-blocks)
                    (throw (ex-info "unixfs: block budget exhausted"
-                                   {:root root :max-blocks max-blocks})))
+                                   {:type :unixfs/block-budget
+                                    :root root :max-blocks max-blocks})))
                  (let [bytes (or (get-block c)
                                  (throw (ex-info "unixfs: missing block"
-                                                 {:root root :cid c})))
+                                                 {:type :unixfs/missing-block
+                                                  :root root :cid c})))
                        actual (if (= 0x55 expect-codec)
                                 (mf/cidv1-raw bytes)
                                 (dag-pb/cid bytes))]
                    (when-not (= c actual)
                      (throw (ex-info "unixfs: block does not hash to its cid"
-                                     {:asked c :got actual})))
+                                     {:type :unixfs/cid-mismatch
+                                      :asked c :got actual})))
                    bytes))
          walk (fn walk [c]
                 (case (codec-of c)
@@ -180,10 +185,12 @@
                              data (pb/decode data-schema (:data node))]
                          (when-not (= type-file (:type data))
                            (throw (ex-info "unixfs: not a file node"
-                                           {:cid c :type (:type data)})))
+                                           {:type :unixfs/not-a-file
+                                            :cid c :unixfs-type (:type data)})))
                          (into (vec (or (:data data) []))
                                (mapcat (comp walk :cid))
                                (:links node)))
                   (throw (ex-info "unixfs: unsupported codec for a file"
-                                  {:cid c :codec (codec-of c)}))))]
+                                  {:type :unixfs/unsupported-codec
+                                   :cid c :codec (codec-of c)}))))]
      (->bytes (walk root)))))
