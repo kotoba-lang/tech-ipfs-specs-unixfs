@@ -11,7 +11,7 @@
   depends on the 174-link ceiling and not on chunk size, so a smaller chunk
   reaches the same boundaries — 174 links, 175, three levels — in kilobytes
   instead of tens of megabytes."
-  (:require [clojure.string :as str]
+  (:require [kotoba.lang.text :as str]
             [clojure.test :refer [deftest is testing]]
             [ipld.dag-pb :as dag-pb]
             [multiformats.core :as mf]
