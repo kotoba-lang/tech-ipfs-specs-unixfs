@@ -79,7 +79,7 @@ unixfs.file        chunker, balanced tree, UnixFS Data header
 ## Test
 
 ```bash
-clojure -M:test
+kbb -M:test
 ```
 
 ## License
