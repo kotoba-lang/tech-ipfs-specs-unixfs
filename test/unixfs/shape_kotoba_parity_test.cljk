@@ -31,7 +31,7 @@
 ;;     against nothing else.
 
 (ns unixfs.shape-kotoba-parity-test
-  (:require [clojure.java.io :as io]
+  (:require [kotoba.io :as io]
             [kotoba.lang.text :as str]
             [kotoba.test :refer [deftest is testing]]
             [kotoba.compiler.core :as compiler]
@@ -80,7 +80,7 @@
 ;; --- the tests ---------------------------------------------------------------
 
 (deftest guest-source-is-present
-  (is (.exists guest-file) (str "kotoba object not found at " guest-file)))
+  (is (io/exists? guest-file) (str "kotoba object not found at " guest-file)))
 
 (deftest the-defaults-are-the-constants-of-the-format
   (testing "go-unixfs DefaultLinksPerBlock and the `ipfs add` chunker
